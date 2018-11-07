@@ -49,12 +49,31 @@ document.addEventListener("DOMContentLoaded", function() {
        // readButton = showPanel.querySelector('#read-button')
        showPanel.addEventListener('click', (event)=> {
          if (event.target.id==='read-button') {
-           let id = event.target.dataset.id
-           let findBook = books.find(book=> book.id == id)
-           
-         }
-       })
-
+           if (bookUsers.includes("pouros")) {
+             alert("Yo! You've already liked this bro")
+           } else {
+            let newUsersArray = book.users.concat({"id":1, "username":"pouros"})
+             fetch(`http://localhost:3000/books/${id}`, {
+               method: 'PATCH',
+               headers: {
+                 "Content-Type": "application/json; charset=utf-8"
+                },
+                body: JSON.stringify(
+                  {
+                    "users": newUsersArray
+                  }
+                )
+              })
+              .then((response)=> {
+               if (response.ok) {
+                 book.users = newUsersArray
+                 bookUsersContainer.innerHTML+=`
+                   <li>pouros</li>`
+                }
+              })
+            } // end of the else
+          }
+        })
     } // end of if to check that it's a li item
   }) // end of event listener
 
