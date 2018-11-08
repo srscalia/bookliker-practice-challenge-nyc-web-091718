@@ -1,89 +1,108 @@
-// click on a book, you should see the book's thumbnail and description and a list of users who have liked the book.
+// *************************** Variables *******************************
+let books = []
+let list;
+let showPanel;
+let usersDiv;
 
-// You can like a book by clicking on a button
-
+// *************************** Event Listeners **************************
 document.addEventListener("DOMContentLoaded", function() {
+  list = document.querySelector('#list')
+  showPanel = document.querySelector('#show-panel')
 
-//********************** Variables******************************
+  renderAllBooks()
 
-  let books = []
-  let bookContainer = document.querySelector('#list')
-  let showPanel = document.querySelector('#show-panel')
-  // let readButton;
+  list.addEventListener('click', function(event){
+    bookThumbnail(event)
+  })
 
+  showPanel.addEventListener('click', function(event){
+    if (event.target.name ==="button") {
+      readBookEventHandler(event)
+    }
+  })
+
+});
+
+// *************************** Helper Functions **************************
+function renderAllBooks(){
   fetch('http://localhost:3000/books')
-    .then((response)=>{return response.json()})
-    .then((json)=>{
-      books = json
-      books.forEach((book)=> {
-        bookContainer.innerHTML += `
-        <li id = ${book.id}>
-        ${book.title}
-        </li>
-        `
-      }) // end of the forEach
-    }) // end of the fetch
+  .then(response => response.json())
+  .then((json)=> {
+    books = json
+    AddBooksToDom(books)
+  })
+}
 
-//********************** Event Listeners **********************
+function AddBooksToDom(books){
+  books.forEach((book)=>{
+    AddSingleBookToDom(book)
+  })
+}
 
-  bookContainer.addEventListener('click', (event)=> {
-    if (event.target.localName === 'li') {
-      let id = event.target.id
-      let book = books.find((book)=> {return book.id == id})
-      let bookUsers = book.users.map((user)=> {return user.username})
+function AddSingleBookToDom(book){
+  list.innerHTML += `<li data-id=${book.id}>${book.title}</li>`
+}
 
-      showPanel.innerHTML= `
-        <h3 data-id = ${book.id} > ${book.title} </h3>
-        <img src="${book.img_url}" alt="book image">
-        <p> ${book.description} </p>
-        <ul class='users'></ul>
-        <button data-id = ${book.id} id="read-button" type="button">Read Me!</button>
-      `
-      let bookUsersContainer = showPanel.querySelector('.users')
+function bookThumbnail(event){
+  let id = event.target.dataset.id
+  let findBookToShow = books.find((book)=>{
+    return book.id == id
+  })
+  addThumbnailToDom(findBookToShow)
+}
 
-      bookUsers.forEach((user)=> {
-        return bookUsersContainer.innerHTML+= `
-          <li>${user}</li>
-        `
-      }) // end of forEach
-       // readButton = showPanel.querySelector('#read-button')
-       showPanel.addEventListener('click', (event)=> {
-         if (event.target.id==='read-button') {
-           if (bookUsers.includes("pouros")) {
-             alert("Yo! You've already liked this bro")
-           } else {
-            let newUsersArray = book.users.concat({"id":1, "username":"pouros"})
-             fetch(`http://localhost:3000/books/${id}`, {
-               method: 'PATCH',
-               headers: {
-                 "Content-Type": "application/json; charset=utf-8"
-                },
-                body: JSON.stringify(
-                  {
-                    "users": newUsersArray
-                  }
-                )
-              })
-              .then((response)=> {
-               if (response.ok) {
-                 book.users = newUsersArray
-                 bookUsersContainer.innerHTML+=`
-                   <li>pouros</li>`
-                }
-              })
-            } // end of the else
-          }
-        })
-    } // end of if to check that it's a li item
-  }) // end of event listener
+function addThumbnailToDom(findBookToShow){
+  showPanel.innerHTML=`
+  <h3>${findBookToShow.title}</h3>
+  <img src="${findBookToShow.img_url}" alt="book image">
+  <p>${findBookToShow.description}</p>
+  <button data-id=${findBookToShow.id} type="button" name="button">Read Book</button>
+  <ul id='users'> <ul>
+  `
+   usersList = showPanel.querySelector("#users")
 
+  addUsersToDom(findBookToShow)
+}
 
+function addUsersToDom(findBookToShow){
+  let users = findBookToShow.users.map((user)=>{return user.username})
+  users.forEach((user)=>{
+    addSingleUserToDom(user)
+  })
+}
 
+function addSingleUserToDom(user){
+  usersList.innerHTML+=`<li>${user}</li>`
+}
 
+function readBookEventHandler(event){
+  let id = event.target.dataset.id
 
+  let findBookToRead = books.find((book)=>{
+    return book.id == id
+  })
+  let newUsers = findBookToRead.users.concat({"id":1, "username":"pouros"})
 
+  let users = findBookToRead.users.map((user)=>{return user.username})
 
-
-
-
-}) // end of DOMContentLoadeds
+  if (users.includes('pouros')) {
+    alert("Yo! You already liked this.")
+  } else {
+    fetch(`http://localhost:3000/books/${id}`,{
+      method: 'PATCH',
+      headers: {
+            "Content-Type": "application/json; charset=utf-8"
+      },
+      body: JSON.stringify({
+        users: newUsers
+      })
+    }).then((response)=>{
+      if (response.ok) {
+        return response.json()
+      }
+    }).then((json)=>{
+      findBookToRead.users = newUsers
+      usersList.innerHTML+=`<li>pouros</li>`
+    })
+  }
+}
